@@ -1,11 +1,11 @@
 {
-    "name": "viison/composer-symlink-installer",
+    "name": "viison/composer-merge-plugin",
     "type": "composer-plugin",
     "autoload": {
         "psr-4": {"Viison\\Composer\\": ""}
     },
     "extra": {
-        "class": "Viison\\Composer\\ComposerSymlinkInstallerPlugin"
+        "class": "Viison\\Composer\\ComposerMergePlugin"
     },
     "require": {
         "composer-plugin-api": "^1.0"
