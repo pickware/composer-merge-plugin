@@ -1,0 +1,13 @@
+{
+    "name": "viison/composer-symlink-installer",
+    "type": "composer-plugin",
+    "autoload": {
+        "psr-4": {"Viison\\Composer\\": ""}
+    },
+    "extra": {
+        "class": "Viison\\Composer\\ComposerSymlinkInstallerPlugin"
+    },
+    "require": {
+        "composer-plugin-api": "^1.0"
+    }
+}
