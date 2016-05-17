@@ -85,7 +85,7 @@ class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 				list ($type, $dst, $src, $md5) = $entry;
 				
 				if ($type === self::TYPE_SYMLINK) {
-					if (is_link($dst) && md5_file($dst) === $md5) {
+					if (is_link($dst) /* TODO Check if link target points to src */) {
 						if (!$this->filesystem->unlink($dst)) {
 							$this->io->writeError('<warning>Previously merged symlink ' . $dst . ' could not be removed</warning>');
 						}
