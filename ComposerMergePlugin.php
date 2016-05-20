@@ -221,6 +221,7 @@ class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 			\RecursiveDirectoryIterator::CURRENT_AS_FILEINFO
 		));
 		
+		// Find all subpaths withing this package's install path matching one or more merge patterns:
 		foreach ($fileIterator as $fileinfo) {
 			$relativePath = $fileIterator->getSubPathname();
 			
@@ -244,52 +245,64 @@ class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 	
 	protected function mergeSymlink($packageInstallPath, $mergePaths) {
 		foreach ($mergePaths as $src => $dst) {
+			$this->deepSymlink($src, $dst);
+		}
+	}
+	
+	protected function deepSymlink($src, $dst) {
+		if (!file_exists($dst)) {
 			
-			if (!is_link($dst)) {
+			// Simply create a symlink:
+			$absoluteSrc = getcwd() . DIRECTORY_SEPARATOR . $src;
+			$absoluteDst = getcwd() . DIRECTORY_SEPARATOR . $dst;
 				
-				$absoluteSrc = getcwd() . DIRECTORY_SEPARATOR . $src;
-				$absoluteDst = getcwd() . DIRECTORY_SEPARATOR . $dst;
-				
-				if (@$this->filesystem->relativeSymlink($absoluteSrc, $absoluteDst)) {
-					$this->mergeLog[] = array(self::MERGE_STRATEGY_SYMLINK, $dst, $src, md5_file($dst));
-				} else {
-					$this->io->writeError('<warning>Can\'t create symlink ' . $dst . ' with target ' . $src . '</warning>');
-				}
+			if (@$this->filesystem->relativeSymlink($absoluteSrc, $absoluteDst)) {
+				$this->mergeLog[] = array(self::TYPE_SYMLINK, $dst, $src, md5_file($dst));
 			} else {
-				if (!readlink($dst) == $src) {
-					$this->io->writeError('<warning>Can\'t create symlink ' . $dst . ' with target ' . $src . ' as there is already a link with different target in place</warning>');
-				} else {
-					$this->io->writeError('<warning>Symlink ' . $dst . ' with target ' . $src . ' already exists</warning>');
-				}
+				$this->io->writeError('<warning>Can\'t create symlink ' . $dst . ' with target ' . $src . '</warning>');
 			}
+		} else if (is_dir($dst)) {
+			
+			// Recursively symlink all files of an already existing directoty:
+			$dir = dir($src);
+			while (($path = $dir->read()) !== false) {
+				if ($path === '.' || $path === '..') continue;
+				$this->deepSymlink($src . DIRECTORY_SEPARATOR . $path, $dst . DIRECTORY_SEPARATOR . $path);
+			}
+			$dir->close();
+		} else if (is_link($dst)) {
+			
+			// Confirm target of an already existing symlink:
+			if (!readlink($dst) == $src) {
+				$this->io->writeError('<warning>Can\'t create symlink ' . $dst . ' with target ' . $src . ' as there is already a link with different target in place</warning>');
+			} else {
+				$this->io->writeError('<warning>Symlink ' . $dst . ' with target ' . $src . ' already exists</warning>');
+			}
+		} else {
+			
+			// File already exists:
+			$this->io->writeError('<warning>Can\'t create symlink ' . $dst . ' with target ' . $src . '</warning>');
 		}
 	}
 	
 	protected function mergeCopy($packageInstallPath, $mergePaths) {
 		foreach ($mergePaths as $src => $dst) {
-			
-			if (!file_exists($dst)) {
-				$this->deepCopy($src, $dst);
-			} else {
-				$this->io->writeError('<warning>' . $dst . ' already exists</warning>');
-			}
+			$this->deepCopy($src, $dst);
 		}
 	}
 	
 	protected function deepCopy($src, $dst) {
 		if (is_link($src)) {
+			
+			// Create a new symlink at the destination and copy the target of the source symlink: 
 			if (@symlink(readlink($src), $dst)) {
 				$this->mergeLog[] = array(self::TYPE_SYMLINK, $dst, $src, md5_file($dst));
 			} else {
 				$this->io->writeError('<warning>Can\'t copy symlink ' . $src . ' to ' . $dst . '</warning>');
 			}
-		} else if (is_file($src)) {
-			if (@copy($src, $dst)) {
-				$this->mergeLog[] = array(self::TYPE_FILE, $dst, $src, md5_file($dst));
-			} else {
-				$this->io->writeError('<warning>Can\'t copy file ' . $src . ' to ' . $dst . '</warning>');
-			}
 		} else if (is_dir($src)) {
+			
+			// Create directories at the destination and recursively copy their contents:
 			if (!is_dir($dst)) {
 				if (@mkdir($dst)) {
 					$this->mergeLog[] = array(self::TYPE_DIRECTORY, $dst, $src, md5_file($dst));
@@ -304,6 +317,14 @@ class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 				$this->deepCopy($src . DIRECTORY_SEPARATOR . $path, $dst . DIRECTORY_SEPARATOR . $path);
 			}
 			$dir->close();
-		}
+		} else {
+				
+			// Copy individual files:
+			if (@copy($src, $dst)) {
+				$this->mergeLog[] = array(self::TYPE_FILE, $dst, $src, md5_file($dst));
+			} else {
+				$this->io->writeError('<warning>Can\'t copy file ' . $src . ' to ' . $dst . '</warning>');
+			}
+		}	
 	}
 }
