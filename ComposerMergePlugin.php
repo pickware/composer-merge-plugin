@@ -305,7 +305,7 @@ class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 			// Create directories at the destination and recursively copy their contents:
 			if (!is_dir($dst)) {
 				if (@mkdir($dst)) {
-					$this->mergeLog[] = array(self::TYPE_DIRECTORY, $dst, $src, md5_file($dst));
+					$this->mergeLog[] = array(self::TYPE_DIRECTORY, $dst, $src, @md5_file($dst));
 				} else {
 					$this->io->writeError('<warning>Can\'t copy directory ' . $src . ' to ' . $dst . '</warning>');
 				}
