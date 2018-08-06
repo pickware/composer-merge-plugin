@@ -33,7 +33,7 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
 use Composer\Util\Filesystem;
 use Composer\Plugin\PluginInterface;
-use Composer\Script\CommandEvent;
+use Composer\Script\Event;
 
 class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 	const MERGE_LOG_FILENAME = 'composer-merge-log.json';
@@ -60,15 +60,15 @@ class ComposerMergePlugin implements PluginInterface, EventSubscriberInterface {
 		return array('post-install-cmd' => 'onPostInstallCmd', 'post-update-cmd' => 'onPostUpdateCmd');
 	}
 	
-	public function onPostInstallCmd(CommandEvent $event) {
+	public function onPostInstallCmd(Event $event) {
 		$this->run($event);
 	}
 	
-	public function onPostUpdateCmd(CommandEvent $event) {
+	public function onPostUpdateCmd(Event $event) {
 		$this->run($event);
 	}
 	
-	protected function run(CommandEvent $event) {
+	protected function run(Event $event) {
 		$this->unmerge();
 		$this->merge($event->isDevMode());
 	}
