@@ -1,5 +1,7 @@
 {
     "name": "viison/composer-merge-plugin",
+    "version": "1.0.0",
+    "description": "Composer Merge Plugin for directory merging after install/update.",
     "type": "composer-plugin",
     "autoload": {
         "psr-4": {"Viison\\Composer\\": ""}
